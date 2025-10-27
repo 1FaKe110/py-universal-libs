@@ -7,20 +7,15 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = fh.read().splitlines()
 
 setup(
-    name="my_libs",
-    version="0.1.0",
+    name="my-libs",
+    version="0.1.1",
     author="IFAKE110",
     author_email="gabko2016@gmail.com",
     description="A collection of utility libraries for database, HTTP, Kafka, logging, config and utils",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=find_packages(where="."),
-    package_dir={
-        "": ".",  # Все пакеты находятся в корне
-    },
-    package_data={
-        "": ["*.py", "*.pyi"],  # Включаем все Python файлы
-    },
+    packages=find_packages(include=['my_libs', 'my_libs.*']),
+    package_dir={'my_libs': 'my_libs'},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
