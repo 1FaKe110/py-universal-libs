@@ -7,7 +7,7 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = fh.read().splitlines()
 
 setup(
-    name="my-libs",
+    name="lib",
     version="0.1.1",
     author="IFAKE110",
     author_email="gabko2016@gmail.com",
