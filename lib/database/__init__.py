@@ -39,13 +39,13 @@ class QueryResult:
 
 class Database:
     """
-    Универсальный обработчик для PostgreSQL и MSSQL на основе SQLAlchemy
+    Универсальный обработчик для PostgreSQL, MySQL и MSSQL на основе SQLAlchemy
     """
 
     def __init__(self, connection_string: str, db_type: str = "auto", **kwargs):
         """
         :param connection_string: строка подключения
-        :param db_type: "postgresql", "mssql" или "auto" для автоопределения
+        :param db_type: "postgresql", "mysql", "mssql" или "auto" для автоопределения
         """
         self.connection_string = connection_string
         self.db_type = self._detect_db_type(connection_string) if db_type == "auto" else db_type
@@ -61,9 +61,13 @@ class Database:
 
     def _detect_db_type(self, connection_string: str) -> str:
         """Автоопределение типа базы по строке подключения"""
-        if connection_string.startswith('postgresql://'):
+        connection_string_lower = connection_string.lower()
+
+        if connection_string_lower.startswith('postgresql://'):
             return "postgresql"
-        elif any(prefix in connection_string.lower() for prefix in ['mssql://', 'sqlserver://', 'mssql+pyodbc://']):
+        elif connection_string_lower.startswith('mysql://') or connection_string_lower.startswith('mysql+pymysql://'):
+            return "mysql"
+        elif any(prefix in connection_string_lower for prefix in ['mssql://', 'sqlserver://', 'mssql+pyodbc://']):
             return "mssql"
         else:
             logger.warning("Cannot detect database type, defaulting to PostgreSQL")
@@ -83,9 +87,19 @@ class Database:
         # Специфичные настройки для MSSQL
         if self.db_type == "mssql":
             base_kwargs.update({
-                'pool_pre_ping': True,  # Важно для MSSQL
+                'pool_pre_ping': True,
                 'connect_args': {
                     'timeout': 30,
+                    'autocommit': False,
+                }
+            })
+        # Специфичные настройки для MySQL
+        elif self.db_type == "mysql":
+            base_kwargs.update({
+                'pool_pre_ping': True,
+                'pool_recycle': 3600,  # Переподключаться каждый час
+                'connect_args': {
+                    'charset': 'utf8mb4',
                     'autocommit': False,
                 }
             })
@@ -118,15 +132,17 @@ class Database:
 
     def exec(self, query: str, params: Dict = None) -> QueryResult:
         """
-        Универсальный метод выполнения запросов для обеих СУБД
+        Универсальный метод выполнения запросов для всех СУБД
         """
-        logger.debug(f"Executing query: {query}")
+        logger.trace(f"Executing query: {query}")
 
         try:
             with self.engine.connect() as connection:
-                # Адаптируем запрос для MSSQL если нужно
+                # Адаптируем запрос для конкретной СУБД если нужно
                 if self.db_type == "mssql":
                     query = self._adapt_query_for_mssql(query)
+                elif self.db_type == "mysql":
+                    query = self._adapt_query_for_mysql(query)
 
                 # Выполняем запрос
                 if params:
@@ -137,8 +153,8 @@ class Database:
                 # Определяем тип запроса
                 query_type = query.strip().upper().split()[0]
 
-                if query_type in ('SELECT', 'WITH'):
-                    # SELECT запрос - возвращаем данные
+                if query_type in ('SELECT', 'WITH', 'SHOW', 'DESCRIBE', 'EXPLAIN'):
+                    # SELECT и информационные запросы - возвращаем данные
                     rows = result.fetchall()
                     data = self._rows_to_dict(rows, result.keys())
                     return QueryResult(data, len(rows))
@@ -163,9 +179,24 @@ class Database:
                 flags=re.IGNORECASE
             )
 
-        # Заменяем ILIKE на LIKE для MSSQL (регистронезависимость через collation)
+        # Заменяем ILIKE на LIKE для MSSQL
         if ' ILIKE ' in query.upper():
             query = query.replace(' ILIKE ', ' LIKE ')
+
+        return query
+
+    def _adapt_query_for_mysql(self, query: str) -> str:
+        """Адаптирует запросы для MySQL"""
+        # Заменяем ILIKE на LIKE для MySQL (MySQL LIKE по умолчанию регистронезависим)
+        if ' ILIKE ' in query.upper():
+            query = query.replace(' ILIKE ', ' LIKE ')
+
+        # Заменяем ::text на CAST для MySQL
+        query = re.sub(
+            r'::\w+',
+            lambda m: f'CAST({m.group(0)[2:]} AS CHAR)',
+            query
+        )
 
         return query
 
@@ -177,6 +208,11 @@ class Database:
                 ' TOP ' not in query.upper() and
                 ' LIMIT ' not in query.upper()):
             query = re.sub(r'^SELECT', 'SELECT TOP 1', query, flags=re.IGNORECASE)
+        # Для MySQL и PostgreSQL добавляем LIMIT 1
+        elif (self.db_type in ["mysql", "postgresql"] and
+              query.strip().upper().startswith('SELECT') and
+              ' LIMIT ' not in query.upper()):
+            query = query + ' LIMIT 1'
 
         result = self.exec(query, params)
         if result.success and isinstance(result.data, list) and result.data:
@@ -189,7 +225,8 @@ class Database:
 
     def insert(self, table: str, data: Dict, return_id: bool = False) -> QueryResult:
         """
-        Вставка одной записи с поддержкой RETURNING для PostgreSQL и OUTPUT для MSSQL
+        Вставка одной записи с поддержкой RETURNING для PostgreSQL,
+        LAST_INSERT_ID() для MySQL и OUTPUT для MSSQL
         """
         columns = ', '.join(data.keys())
         values = ', '.join([f':{key}' for key in data.keys()])
@@ -197,12 +234,22 @@ class Database:
         if return_id:
             if self.db_type == "postgresql":
                 query = f"INSERT INTO {table} ({columns}) VALUES ({values}) RETURNING id"
+            elif self.db_type == "mysql":
+                query = f"INSERT INTO {table} ({columns}) VALUES ({values})"
             else:  # MSSQL
                 query = f"INSERT INTO {table} ({columns}) OUTPUT INSERTED.id VALUES ({values})"
         else:
             query = f"INSERT INTO {table} ({columns}) VALUES ({values})"
 
-        return self.exec(query, data)
+        result = self.exec(query, data)
+
+        # Для MySQL получаем последний вставленный ID отдельным запросом
+        if return_id and self.db_type == "mysql" and result.success:
+            last_id_result = self.fetch_one("SELECT LAST_INSERT_ID() as id")
+            if last_id_result.success:
+                result.data = last_id_result.data
+
+        return result
 
     def update(self, table: str, data: Dict, where: str, where_params: Dict = None) -> QueryResult:
         """Обновление записей"""
@@ -232,6 +279,13 @@ class Database:
                     AND table_name = :table_name
                 )
             """
+        elif self.db_type == "mysql":
+            query = """
+                SELECT COUNT(*) as table_exists
+                FROM information_schema.tables 
+                WHERE table_schema = DATABASE() 
+                AND table_name = :table_name
+            """
         else:  # MSSQL
             query = """
                 SELECT CASE 
@@ -242,10 +296,15 @@ class Database:
             """
 
         result = self.fetch_one(query, {'table_name': table_name})
+        if not result.success:
+            return False
+
         if self.db_type == "postgresql":
-            return result.data['exists'] if result.success else False
-        else:
-            return result.data['table_exists'] == 1 if result.success else False
+            return result.data['exists']
+        elif self.db_type == "mysql":
+            return result.data['table_exists'] > 0
+        else:  # MSSQL
+            return result.data['table_exists'] == 1
 
     def get_table_columns(self, table_name: str) -> List[str]:
         """Возвращает список колонок таблицы"""
@@ -254,6 +313,13 @@ class Database:
                 SELECT column_name 
                 FROM information_schema.columns 
                 WHERE table_schema = 'public' AND table_name = :table_name
+                ORDER BY ordinal_position
+            """
+        elif self.db_type == "mysql":
+            query = """
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_schema = DATABASE() AND table_name = :table_name
                 ORDER BY ordinal_position
             """
         else:  # MSSQL
@@ -271,15 +337,33 @@ class Database:
         """Проверяет соединение с базой данных"""
         try:
             with self.engine.connect() as conn:
-                if self.db_type == "postgresql":
+                if self.db_type == "mysql":
                     conn.execute(text("SELECT 1"))
-                else:  # MSSQL
+                else:
                     conn.execute(text("SELECT 1"))
             logger.info("Database connection test: OK")
             return True
         except Exception as e:
             logger.error(f"Database connection test failed: {e}")
             return False
+
+    def get_mysql_version(self) -> Optional[str]:
+        """Возвращает версию MySQL сервера (только для MySQL)"""
+        if self.db_type != "mysql":
+            logger.warning("This method is only available for MySQL databases")
+            return None
+
+        result = self.fetch_one("SELECT VERSION() as version")
+        return result.data['version'] if result.success else None
+
+    def list_databases(self) -> List[str]:
+        """Возвращает список баз данных (только для MySQL)"""
+        if self.db_type != "mysql":
+            logger.warning("This method is only available for MySQL databases")
+            return []
+
+        result = self.fetch_all("SHOW DATABASES")
+        return [row['Database'] for row in result.data] if result.success else []
 
 
 class DatabaseManager:
@@ -332,4 +416,5 @@ db_manager = DatabaseManager()
 
 # Aliases для обратной совместимости
 PostgresqlDb = Database
+MySQLDb = Database
 DB = Database
