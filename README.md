@@ -369,6 +369,20 @@ db_stats = db_manager.get_stats()
 - MSSQL 2016+
 - Apache Kafka 2.5+
 
+# Установка
+
+```bash
+pip install git+https://github.com/1FaKe110/py-universal-libs.git
+```
+
+# Использование в requirements.txt других проектов:
+
+```txt
+loguru==0.7.3
+... тут ваши импорты
+my-libs @ git+https://github.com/yourusername/py-universal-libs.git@v0.1.0
+```
+
 # Лицензия
 MIT License - свободное использование и модификация.
 
