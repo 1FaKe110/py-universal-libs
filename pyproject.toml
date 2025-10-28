@@ -3,8 +3,8 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "iflib"
-version = "0.1.1"
+name = "iflib-tools"
+version = "0.1.5"
 description = "A collection of utility libraries for database, HTTP, Kafka, logging, config and utils"
 authors = [
     {name = "IFAKE110", email = "gabko2016@gmail.com"}

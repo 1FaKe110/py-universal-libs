@@ -4,8 +4,8 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setup(
-    name="iflib",
-    version="0.1.2",
+    name="iflib-tools",
+    version="0.1.5",
     author="IFAKE110",
     author_email="gabko2016@gmail.com",
     description="A collection of utility libraries for database, HTTP, Kafka, logging, config and utils",
