@@ -3,11 +3,11 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "lib"
+name = "iflib"
 version = "0.1.1"
 description = "A collection of utility libraries for database, HTTP, Kafka, logging, config and utils"
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "IFAKE110", email = "gabko2016@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -28,3 +28,7 @@ dev = [
     "black>=21.0",
     "flake8>=3.9",
 ]
+
+[project.urls]
+"Homepage" = "https://github.com/1FaKe110/py-universal-libs"
+"Bug Reports" = "https://github.com/1FaKe110/py-universal-libs/issues"

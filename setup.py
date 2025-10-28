@@ -3,19 +3,15 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
-with open("requirements.txt", "r", encoding="utf-8") as fh:
-    requirements = fh.read().splitlines()
-
 setup(
-    name="lib",
-    version="0.1.1",
+    name="iflib",
+    version="0.1.2",
     author="IFAKE110",
     author_email="gabko2016@gmail.com",
     description="A collection of utility libraries for database, HTTP, Kafka, logging, config and utils",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=find_packages(),  # ✅ Автоматически найдет все пакеты
-    # УДАЛИТЬ package_dir - он не нужен при вашей структуре
+    packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
@@ -26,7 +22,16 @@ setup(
         "Programming Language :: Python :: 3.11",
     ],
     python_requires=">=3.10",
-    install_requires=requirements,
+    install_requires=[
+        "loguru>=0.7.0",
+        "sqlalchemy>=1.4.0",
+        "pandas>=1.3.0",
+        "requests>=2.25.0",
+        "confluent-kafka>=2.3.0",
+        "pyyaml>=6.0",
+        "python-dotenv>=0.19.0",
+        "urllib3>=1.26.0",
+    ],
     extras_require={
         "dev": [
             "pytest>=6.0",
