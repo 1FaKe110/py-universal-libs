@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iflib-tools"
-version = "0.1.8"
+version = "0.1.10"
 description = "A collection of utility libraries for database, HTTP, Kafka, logging, config and utils"
 authors = [
     {name = "IFAKE110", email = "gabko2016@gmail.com"}
