@@ -8,14 +8,14 @@
 ### Установка зависимостей
 
 ```bash
-pip install -r requirements.txt
+pip install -r iflib-tools
 ```
 Базовая настройка
 ```python
 
 
-from iflib_toolsimport config_manager
-from iflib_toolsimport AppLogger
+from iflib_tools import config_manager
+from iflib_tools import AppLogger
 
 # Загрузка конфигурации
 config_manager.load_from_dict({
@@ -56,7 +56,7 @@ main.py              # Главный файл
 
 ```python
 
-from iflib_toolsimport config_manager
+from iflib_tools import config_manager
 
 # Загрузка из YAML
 config_manager.load_from_yaml("config.yaml")
@@ -115,7 +115,7 @@ databases:
 
 ```python
 
-from iflib_toolsimport LoggerSetup, AppLogger
+from iflib_tools import LoggerSetup, AppLogger
 
 # Настройка логгера
 log_setup = LoggerSetup(level="DEBUG", enable_file_logging=True)
@@ -139,7 +139,7 @@ app_logger.debug("Отладочная информация", query=sql_query, p
 
 ```python
 
-from iflib_toolsimport db_manager, Database
+from iflib_tools import db_manager, Database
 
 # Добавление базы данных
 db = db_manager.add_database(
@@ -178,7 +178,7 @@ HTTP клиент с retry логикой, таймаутами и подроб�
 
 ```python
 
-from iflib_toolsimport HttpManager
+from iflib_tools import HttpManager
 
 # Создание менеджера
 http_manager = HttpManager()
@@ -208,7 +208,7 @@ print(f"Успешных запросов: {stats['success_rate']}%")
 
 ```python
 
-from iflib_toolsimport KafkaManager
+from iflib_tools import KafkaManager
 
 # Создание менеджера
 kafka_manager = KafkaManager(bootstrap_servers="localhost:9092")
@@ -237,7 +237,7 @@ kafka_manager.send_message("test-topic", {"key": "value"})
 
 ```python
 
-from iflib_toolsimport data_utils, validation_utils, format_utils
+from iflib_tools import data_utils, validation_utils, format_utils
 
 # Работа с данными
 chunks = list(data_utils.chunker([1, 2, 3, 4, 5], chunk_size=2))
@@ -273,11 +273,11 @@ python test_compability.py
 Пример полного workflow
 ```python
 
-from iflib_toolsimport config_manager
-from iflib_toolsimport AppLogger
-from iflib_toolsimport db_manager
-from iflib_toolsimport HttpManager
-from iflib_toolsimport KafkaManager
+from iflib_tools import config_manager
+from iflib_tools import AppLogger
+from iflib_tools import db_manager
+from iflib_tools import HttpManager
+from iflib_tools import KafkaManager
 
 class MyApplication:
     def __init__(self):
@@ -372,15 +372,7 @@ db_stats = db_manager.get_stats()
 # Установка
 
 ```bash
-pip install git+https://github.com/1FaKe110/py-universal-libs.git
-```
-
-# Использование в requirements.txt других проектов:
-
-```txt
-loguru==0.7.3
-... тут ваши импорты
-my-iflib_tools@ git+https://github.com/yourusername/py-universal-libs.git@v0.1.0
+pip install iflib-tools
 ```
 
 # Лицензия
