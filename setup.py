@@ -14,8 +14,8 @@ setup(
     description="A collection of utility libraries for database, HTTP, Kafka, logging, config and utils",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=find_packages(include=['my_libs', 'my_libs.*']),
-    package_dir={'my_libs': 'my_libs'},
+    packages=find_packages(),  # ✅ Автоматически найдет все пакеты
+    # УДАЛИТЬ package_dir - он не нужен при вашей структуре
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
