@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="iflib-tools",
-    version="0.1.10",
+    version="0.1.13",
     author="IFAKE110",
     author_email="gabko2016@gmail.com",
     description="A collection of utility libraries for database, HTTP, Kafka, logging, config and utils",

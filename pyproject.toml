@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "iflib-tools"
-version = "0.1.10"
+version = "0.1.13"
 description = "A collection of utility libraries for database, HTTP, Kafka, logging, config and utils"
 authors = [
     {name = "IFAKE110", email = "gabko2016@gmail.com"}
@@ -20,6 +20,7 @@ dependencies = [
     "pyyaml>=6.0",
     "python-dotenv>=0.19.0",
     "urllib3>=1.26.0",
+    "aiohttp>=3.13.1",
 ]
 
 [project.optional-dependencies]
